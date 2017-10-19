@@ -59,6 +59,7 @@ export default class App extends React.Component<any, any>
             if (this.mouseStart == null)
             {
                 this.mouseStart = interaction.mouse.global.clone();
+                this.mouseEnd = interaction.mouse.global.clone();
             }
             
         });
@@ -73,6 +74,22 @@ export default class App extends React.Component<any, any>
 
         this.canvas.addEventListener('mouseup', ()=>
         {
+            for (let u of this.state.units)
+                u.selected = false;
+
+            for (let u of this.state.units)
+            {
+                let w = Math.abs(this.mouseStart.x - this.mouseEnd.x);
+                let h = Math.abs(this.mouseStart.y - this.mouseEnd.y);
+                let x = Math.min(this.mouseStart.x, this.mouseEnd.x);
+                let y = Math.min(this.mouseStart.y, this.mouseEnd.y);
+                let rect = new PIXI.Rectangle(x, y, w, h);
+                if (rect.contains(u.pos.x, u.pos.y))
+                {
+                    u.selected = true;
+                }
+            }
+
             this.mouseEnd = null;
             this.mouseStart = null;
         });
@@ -82,6 +99,15 @@ export default class App extends React.Component<any, any>
             this.graphics.clear();
             for (let u of this.state.units)
             {
+                if (u.selected)
+                {
+                    this.graphics.lineStyle(1, 0xFFFFFF);
+                }
+                else
+                {
+                    this.graphics.lineStyle(0, 0xFFFFFF);
+                }
+
                 this.graphics.beginFill(u.owner.color);
                 this.graphics.drawCircle(u.pos.x, u.pos.y, u.radius);
                 this.graphics.endFill();
