@@ -16,21 +16,27 @@ export default class App extends React.Component<any, any>
     componentDidMount()
     {
         //this.app = new PIXI.Application(_;
-        let renderer = PIXI.autoDetectRenderer(400, 400, this.canvas); 
-        var graphics = new PIXI.Graphics();
+        let renderer = PIXI.autoDetectRenderer(800, 600, {view: this.canvas, antialias:false}); 
+        let graphics = new PIXI.Graphics();
         
-        graphics.beginFill(0xFFFF00);
-        
-        // set the line style to have a width of 5 and set the color to red
-        graphics.lineStyle(5, 0xFF0000);
-        
-        // draw a rectangle
-        graphics.drawRect(0, 0, 222, 222);
+        graphics.beginFill(0xFF3300);
+        graphics.lineStyle(4, 0xffd900, 1);
+        graphics.moveTo(50,50);
+        graphics.lineTo(250, 50);
+        graphics.lineTo(100, 100);
+        graphics.lineTo(50, 50);
+        graphics.endFill();
         
         let stage = new PIXI.Container();
         stage.addChild(graphics);
 
-        renderer.render(stage);
+        let f = () =>
+        {
+            renderer.render(stage);
+            requestAnimationFrame(f);
+        };
+
+        f();
     }
 
     render() {
