@@ -17,6 +17,8 @@ export default class App extends React.Component<any, any>
     constructor(props:any)
     {
         super();
+        document.addEventListener('contextmenu', e=> event.preventDefault());
+        
     }
 
     componentDidMount()
