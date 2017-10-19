@@ -6,6 +6,7 @@ import * as PIXI from 'pixi.js';
 
 export default class App extends React.Component<any, any>
 {
+    stage:PIXI.Container;
     canvas:HTMLCanvasElement;
     app:PIXI.Application;
     constructor(props:any)
@@ -15,8 +16,8 @@ export default class App extends React.Component<any, any>
 
     componentDidMount()
     {
-        //this.app = new PIXI.Application(_;
-        let renderer = PIXI.autoDetectRenderer(800, 600, {view: this.canvas, antialias:false}); 
+        this.stage = new PIXI.Container();
+        let renderer = PIXI.autoDetectRenderer(640, 480, {view: this.canvas, antialias:false}); 
         let graphics = new PIXI.Graphics();
         
         graphics.beginFill(0xFF3300);
@@ -27,12 +28,11 @@ export default class App extends React.Component<any, any>
         graphics.lineTo(50, 50);
         graphics.endFill();
         
-        let stage = new PIXI.Container();
-        stage.addChild(graphics);
+        this.stage.addChild(graphics);
 
         let f = () =>
         {
-            renderer.render(stage);
+            renderer.render(this.stage);
             requestAnimationFrame(f);
         };
 
