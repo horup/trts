@@ -3,7 +3,7 @@ import { Container, Button, Form, FormGroup, Label, Input, FormText } from 'reac
 import { DatetimePicker } from '../extensions';
 import { HashRouter, Route, Link } from 'react-router-dom';
 import * as PIXI from 'pixi.js';
-import {State, Unit, Player} from './model';
+import {State, Unit, Player, MoveOrder} from './model';
 
 export default class App extends React.Component<any, any>
 {
@@ -56,14 +56,30 @@ export default class App extends React.Component<any, any>
         {
             console.log('test');
         });*/
-        this.canvas.addEventListener('mousedown', ()=>
+        this.canvas.addEventListener('mousedown', (e)=>
         {
-            if (this.mouseStart == null)
+            if (e.button == 0)
             {
-                this.mouseStart = interaction.mouse.global.clone();
-                this.mouseEnd = interaction.mouse.global.clone();
+                if (this.mouseStart == null)
+                {
+                    this.mouseStart = interaction.mouse.global.clone();
+                    this.mouseEnd = interaction.mouse.global.clone();
+                }
             }
-            
+            else
+            {
+                for (let u of this.state.units)
+                {
+                    if (u.selected)
+                    {
+                        let order = new MoveOrder();
+                        order.pos.x = interaction.mouse.global.x;
+                        order.pos.y = interaction.mouse.global.y;
+                        u.order = order;
+                        console.log(order);
+                    }
+                }
+            }
         });
 
         this.canvas.addEventListener('mousemove', ()=>
@@ -74,26 +90,29 @@ export default class App extends React.Component<any, any>
             }
         });
 
-        this.canvas.addEventListener('mouseup', ()=>
+        this.canvas.addEventListener('mouseup', (e) =>
         {
-            for (let u of this.state.units)
-                u.selected = false;
-
-            for (let u of this.state.units)
+            if (e.button == 0)
             {
-                let w = Math.abs(this.mouseStart.x - this.mouseEnd.x);
-                let h = Math.abs(this.mouseStart.y - this.mouseEnd.y);
-                let x = Math.min(this.mouseStart.x, this.mouseEnd.x);
-                let y = Math.min(this.mouseStart.y, this.mouseEnd.y);
-                let rect = new PIXI.Rectangle(x, y, w, h);
-                if (rect.contains(u.pos.x, u.pos.y))
-                {
-                    u.selected = true;
-                }
-            }
+                for (let u of this.state.units)
+                    u.selected = false;
 
-            this.mouseEnd = null;
-            this.mouseStart = null;
+                for (let u of this.state.units)
+                {
+                    let w = Math.abs(this.mouseStart.x - this.mouseEnd.x);
+                    let h = Math.abs(this.mouseStart.y - this.mouseEnd.y);
+                    let x = Math.min(this.mouseStart.x, this.mouseEnd.x);
+                    let y = Math.min(this.mouseStart.y, this.mouseEnd.y);
+                    let rect = new PIXI.Rectangle(x, y, w, h);
+                    if (rect.contains(u.pos.x, u.pos.y))
+                    {
+                        u.selected = true;
+                    }
+                }
+
+                this.mouseEnd = null;
+                this.mouseStart = null;
+            }
         });
 
         let f = () =>
@@ -101,6 +120,11 @@ export default class App extends React.Component<any, any>
             this.graphics.clear();
             for (let u of this.state.units)
             {
+                if (u.order != null)
+                {
+                    u.order.execute(u);
+                }
+                
                 if (u.selected)
                 {
                     this.graphics.lineStyle(1, 0xFFFFFF);
