@@ -7,6 +7,8 @@ import {State, Unit, Player, MoveOrder} from './model';
 
 export default class App extends React.Component<any, any>
 {
+    text:PIXI.Text;
+    planning:boolean = true;
     mouseStart:PIXI.Point;
     mouseEnd:PIXI.Point;
     graphics:PIXI.Graphics;
@@ -51,11 +53,10 @@ export default class App extends React.Component<any, any>
         this.graphics = new PIXI.Graphics();
         
         this.stage.addChild(this.graphics);
-        this.stage.interactive = true;
-       /* this.stage.on('mousemove', (e)=>
-        {
-            console.log('test');
-        });*/
+
+        this.text = new PIXI.Text("hello world", {fontFamily : 'Arial', fontSize: 24, fill : 0xff1010, align : 'center'});
+        
+        this.stage.addChild(this.text);
         this.canvas.addEventListener('mousedown', (e)=>
         {
             if (e.button == 0)
@@ -117,6 +118,7 @@ export default class App extends React.Component<any, any>
 
         let f = () =>
         {
+            this.text.text = this.planning ? "Planning..." : "";
             this.graphics.clear();
             for (let u of this.state.units)
             {
@@ -124,7 +126,7 @@ export default class App extends React.Component<any, any>
                 {
                     u.order.execute(u);
                 }
-                
+
                 if (u.selected)
                 {
                     this.graphics.lineStyle(1, 0xFFFFFF);
