@@ -7,8 +7,9 @@ import {State, Unit, Player, MoveOrder} from './model';
 
 export default class App extends React.Component<any, any>
 {
+    
     text:PIXI.Text;
-    planning:boolean = true;
+    roundTimer:number = 0;
     mouseStart:PIXI.Point;
     mouseEnd:PIXI.Point;
     graphics:PIXI.Graphics;
@@ -22,6 +23,8 @@ export default class App extends React.Component<any, any>
         document.addEventListener('contextmenu', e=> event.preventDefault());
         
     }
+
+    isPlanningPhase = ()=> { return this.roundTimer == 0; };
 
     componentDidMount()
     {
@@ -77,7 +80,6 @@ export default class App extends React.Component<any, any>
                         order.pos.x = interaction.mouse.global.x;
                         order.pos.y = interaction.mouse.global.y;
                         u.order = order;
-                        console.log(order);
                     }
                 }
             }
@@ -91,43 +93,67 @@ export default class App extends React.Component<any, any>
             }
         });
 
+        document.addEventListener('keypress', ()=>
+        {
+            if (this.roundTimer == 0)
+            {
+                this.roundTimer = 60;
+            }
+
+            console.log("test");
+        });
+
         this.canvas.addEventListener('mouseup', (e) =>
         {
             if (e.button == 0)
             {
-                for (let u of this.state.units)
-                    u.selected = false;
-
-                for (let u of this.state.units)
+                if (this.isPlanningPhase())
                 {
-                    let w = Math.abs(this.mouseStart.x - this.mouseEnd.x);
-                    let h = Math.abs(this.mouseStart.y - this.mouseEnd.y);
-                    let x = Math.min(this.mouseStart.x, this.mouseEnd.x);
-                    let y = Math.min(this.mouseStart.y, this.mouseEnd.y);
-                    let rect = new PIXI.Rectangle(x, y, w, h);
-                    if (rect.contains(u.pos.x, u.pos.y))
-                    {
-                        u.selected = true;
-                    }
-                }
+                    for (let u of this.state.units)
+                        u.selected = false;
 
-                this.mouseEnd = null;
-                this.mouseStart = null;
+                    for (let u of this.state.units)
+                    {
+                        let w = Math.abs(this.mouseStart.x - this.mouseEnd.x);
+                        let h = Math.abs(this.mouseStart.y - this.mouseEnd.y);
+                        let x = Math.min(this.mouseStart.x, this.mouseEnd.x);
+                        let y = Math.min(this.mouseStart.y, this.mouseEnd.y);
+                        let rect = new PIXI.Rectangle(x, y, w, h);
+                        if (rect.contains(u.pos.x, u.pos.y))
+                        {
+                            u.selected = true;
+                        }
+                    }
+
+                    this.mouseEnd = null;
+                    this.mouseStart = null;
+                }
             }
         });
 
-        let f = () =>
+        let conquer = () =>
         {
-            this.text.text = this.planning ? "Planning..." : "";
-            this.graphics.clear();
             for (let u of this.state.units)
             {
-                
                 if (u.order != null)
                 {
                     u.order.execute(u);
                 }
+            }
+        }
 
+        let f = () =>
+        {
+            if (this.roundTimer > 0)
+            {
+                conquer();
+                this.roundTimer--;
+            }
+
+            this.text.text = this.roundTimer == 0 ? "Command" : "";
+            this.graphics.clear();
+            for (let u of this.state.units)
+            {
                 if (u.selected)
                 {
                     this.graphics.lineStyle(1, 0xFFFFFF);
@@ -182,9 +208,7 @@ export default class App extends React.Component<any, any>
                 this.graphics.drawRect(x, y, w, h);
                 this.graphics.endFill();
             }
-
-          /*  if (interaction.mouse.button )
-            console.log(interaction.mouse.button == PIXI.);*/
+           
             renderer.render(this.stage);
             requestAnimationFrame(f);
         };
