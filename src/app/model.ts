@@ -24,10 +24,16 @@ export class MoveOrder extends Order
     pos = {x:0, y:0};
     execute(unit:Unit)
     {
-        let vx = Math.sign(this.pos.x - unit.pos.x);
-        let vy = Math.sign(this.pos.y - unit.pos.y);
-        unit.pos.x += vx;
-        unit.pos.y += vy;
+        let vx = this.pos.x - unit.pos.x;
+        let vy = this.pos.y - unit.pos.y;
+        let l = Math.sqrt(vx*vx + vy*vy);
+        unit.pos.x += Math.sign(vx);
+        unit.pos.y += Math.sign(vy);
+        console.log(l);
+        if (l < 16)
+        {
+            unit.order = null;
+        }
     }
 }
 

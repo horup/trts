@@ -122,6 +122,7 @@ export default class App extends React.Component<any, any>
             this.graphics.clear();
             for (let u of this.state.units)
             {
+                
                 if (u.order != null)
                 {
                     u.order.execute(u);
@@ -134,6 +135,24 @@ export default class App extends React.Component<any, any>
                 else
                 {
                     this.graphics.lineStyle(0, 0xFFFFFF);
+                }
+
+                for (let u2 of this.state.units)
+                {
+                    if (u != u2)
+                    {
+                        let vx = u.pos.x - u2.pos.x;
+                        let vy = u.pos.y - u2.pos.y;
+                        let l = Math.sqrt(vx * vx + vy * vy);
+                        let diff = (u.radius + u2.radius - l) / 2;
+                        if (l < u.radius + u2.radius)
+                        {
+                            u.pos.x += vx / l * diff;
+                            u.pos.y += vy / l * diff;
+                            u2.pos.x -= vx / l * diff;
+                            u2.pos.y -= vy / l * diff;
+                        }
+                    }
                 }
 
                 this.graphics.beginFill(u.owner.color);
