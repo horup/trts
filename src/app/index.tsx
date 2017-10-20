@@ -139,6 +139,17 @@ export default class App extends React.Component<any, any>
                 this.graphics.beginFill(u.owner.color);
                 this.graphics.drawCircle(u.pos.x, u.pos.y, u.radius);
                 this.graphics.endFill();
+
+                if (u.order != null)
+                {
+                    if (u.order instanceof MoveOrder)
+                    {
+                        this.graphics.beginFill(0xFF0000);
+                        this.graphics.moveTo(u.pos.x, u.pos.y);
+                        this.graphics.lineTo(u.order.pos.x, u.order.pos.y);
+                        this.graphics.endFill();
+                    }
+                }
             }
 
             if (this.mouseStart != null && this.mouseEnd != null)
