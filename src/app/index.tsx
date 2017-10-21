@@ -7,9 +7,8 @@ import {State, Unit, Player, MoveOrder} from './model';
 
 export default class App extends React.Component<any, any>
 {
-    
     roundTimer:number = 0;
-    roundLength:number = 60 * 4;
+    roundLength:number = 60 * 3;
     mouseStart:PIXI.Point;
     mouseEnd:PIXI.Point;
     graphics:PIXI.Graphics;
@@ -150,13 +149,18 @@ export default class App extends React.Component<any, any>
             if (this.roundTimer > 0)
             {
                 conquer();
+                for (let u of this.state.units)
+                {
+                    u.think(this.state);
+                }
                 this.roundTimer--;
             }
 
             this.graphics.clear();
             for (let u of this.state.units)
             {
-                if (u.selected)
+                
+                if (u.selected && this.isPlanningPhase())
                 {
                     this.graphics.lineStyle(1, 0xFFFFFF);
                 }
@@ -187,7 +191,7 @@ export default class App extends React.Component<any, any>
                 this.graphics.drawCircle(u.pos.x, u.pos.y, u.radius);
                 this.graphics.endFill();
 
-                if (u.order != null)
+                if (u.order != null && this.isPlanningPhase())
                 {
                     if (u.order instanceof MoveOrder)
                     {
@@ -222,6 +226,40 @@ export default class App extends React.Component<any, any>
                 if (w < 0)
                     w = 0;
                 this.graphics.drawRect(margin, margin, w, 8);
+            }
+
+            if (this.isPlanningPhase())
+            {
+                for (let u of this.state.units)
+                {
+                    if (u.selected)
+                    {
+                        this.graphics.lineStyle(1, 0xFF0000, 0.5);
+                        this.graphics.drawCircle(u.pos.x, u.pos.y, u.attackRadius);
+                        this.graphics.lineStyle(1, 0xFFFFFF, 0.5);
+                        this.graphics.drawCircle(u.pos.x, u.pos.y, u.scoutRadius);
+                    }
+                }
+            }
+
+            if (!this.isPlanningPhase())
+            {
+                for (let u of this.state.effects)
+                {
+                    u.draw(this.graphics);
+                }
+            }
+
+            let deadUnits = this.state.units.filter((u)=>u.health <= 0);
+            for (let u of deadUnits)
+            {
+                this.state.units.splice(this.state.units.indexOf(u), 1);
+            }
+
+            let deadEffects = this.state.effects.filter((u)=>u.life <= 0);
+            for (let u of deadEffects)
+            {
+                this.state.effects.splice(this.state.effects.indexOf(u), 1);
             }
            
             renderer.render(this.stage);
