@@ -24,31 +24,27 @@ export default class App extends React.Component<any, any>
     }
 
     isPlanningPhase = ()=> { return this.roundTimer == 0; };
+    
+    spawnSet(y:number, player:Player)
+    {
+        this.state.players.push(player);
+        for (let i = 0; i < 3; i++)
+        {
+            for (let x = 200; x <= 400; x += 32)
+            {
+                let u = new Unit();
+                u.owner = player;
+                u.pos.x = x;
+                u.pos.y = y + i * 32; 
+                this.state.units.push(u);
+            }
+        }
+    }
 
     componentDidMount()
     {
-        let x = 300;
-        {
-            let p = new Player();
-            p.color = 0x00FF00;
-            let u = new Unit();
-            u.owner = p;
-            u.pos.x = x;
-            u.pos.y = 50;
-            this.state.players.push(p);
-            this.state.units.push(u);
-        }
-        {
-            let p = new Player();
-            p.color = 0xFF0000;
-            let u = new Unit();
-            u.owner = p;
-            u.pos.x = x;
-            u.pos.y = 400;
-            this.state.players.push(p);
-            this.state.units.push(u);
-        }
-
+        this.spawnSet(28, new Player(0xFF0000));
+        this.spawnSet(392, new Player(0x00FF00));
         this.stage = new PIXI.Container();
         let renderer = PIXI.autoDetectRenderer(640, 480, {view: this.canvas, antialias:false}); 
         let interaction = new PIXI.interaction.InteractionManager(renderer);
@@ -260,6 +256,14 @@ export default class App extends React.Component<any, any>
             for (let u of deadEffects)
             {
                 this.state.effects.splice(this.state.effects.indexOf(u), 1);
+            }
+
+            if (!this.isPlanningPhase())
+            {
+            }
+            else
+            {
+                
             }
            
             renderer.render(this.stage);

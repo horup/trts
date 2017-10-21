@@ -113,5 +113,10 @@ export class MoveOrder extends Order
 
 export class Player
 {
+    constructor(color:number)
+    {
+        this.color = color = color;
+    }
+    
     color:number = 0xFFFFFF;
 }
