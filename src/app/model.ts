@@ -29,7 +29,6 @@ export class MoveOrder extends Order
         let l = Math.sqrt(vx*vx + vy*vy);
         unit.pos.x += Math.sign(vx);
         unit.pos.y += Math.sign(vy);
-        console.log(l);
         if (l < 16)
         {
             unit.order = null;

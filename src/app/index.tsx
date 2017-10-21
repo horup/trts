@@ -8,8 +8,8 @@ import {State, Unit, Player, MoveOrder} from './model';
 export default class App extends React.Component<any, any>
 {
     
-    text:PIXI.Text;
     roundTimer:number = 0;
+    roundLength:number = 60 * 4;
     mouseStart:PIXI.Point;
     mouseEnd:PIXI.Point;
     graphics:PIXI.Graphics;
@@ -57,11 +57,11 @@ export default class App extends React.Component<any, any>
         
         this.stage.addChild(this.graphics);
 
-        this.text = new PIXI.Text("hello world", {fontFamily : 'Arial', fontSize: 24, fill : 0xff1010, align : 'center'});
-        
-        this.stage.addChild(this.text);
         this.canvas.addEventListener('mousedown', (e)=>
         {
+            if (!this.isPlanningPhase())
+                return;
+
             if (e.button == 0)
             {
                 if (this.mouseStart == null)
@@ -87,7 +87,10 @@ export default class App extends React.Component<any, any>
 
         this.canvas.addEventListener('mousemove', ()=>
         {
-            if (this.mouseStart != null)
+            if (!this.isPlanningPhase())
+                return;
+            
+                if (this.mouseStart != null)
             {
                 this.mouseEnd = interaction.mouse.global.clone();
             }
@@ -95,39 +98,39 @@ export default class App extends React.Component<any, any>
 
         document.addEventListener('keypress', ()=>
         {
+            if (!this.isPlanningPhase())
+                return;
+
             if (this.roundTimer == 0)
             {
-                this.roundTimer = 60;
+                this.roundTimer = this.roundLength;
             }
-
-            console.log("test");
         });
 
         this.canvas.addEventListener('mouseup', (e) =>
         {
+            if (!this.isPlanningPhase())
+                return;
             if (e.button == 0)
             {
-                if (this.isPlanningPhase())
+                for (let u of this.state.units)
+                    u.selected = false;
+
+                for (let u of this.state.units)
                 {
-                    for (let u of this.state.units)
-                        u.selected = false;
-
-                    for (let u of this.state.units)
+                    let w = Math.abs(this.mouseStart.x - this.mouseEnd.x);
+                    let h = Math.abs(this.mouseStart.y - this.mouseEnd.y);
+                    let x = Math.min(this.mouseStart.x, this.mouseEnd.x);
+                    let y = Math.min(this.mouseStart.y, this.mouseEnd.y);
+                    let rect = new PIXI.Rectangle(x, y, w, h);
+                    if (rect.contains(u.pos.x, u.pos.y))
                     {
-                        let w = Math.abs(this.mouseStart.x - this.mouseEnd.x);
-                        let h = Math.abs(this.mouseStart.y - this.mouseEnd.y);
-                        let x = Math.min(this.mouseStart.x, this.mouseEnd.x);
-                        let y = Math.min(this.mouseStart.y, this.mouseEnd.y);
-                        let rect = new PIXI.Rectangle(x, y, w, h);
-                        if (rect.contains(u.pos.x, u.pos.y))
-                        {
-                            u.selected = true;
-                        }
+                        u.selected = true;
                     }
-
-                    this.mouseEnd = null;
-                    this.mouseStart = null;
                 }
+
+                this.mouseEnd = null;
+                this.mouseStart = null;
             }
         });
 
@@ -150,7 +153,6 @@ export default class App extends React.Component<any, any>
                 this.roundTimer--;
             }
 
-            this.text.text = this.roundTimer == 0 ? "Command" : "";
             this.graphics.clear();
             for (let u of this.state.units)
             {
@@ -207,6 +209,19 @@ export default class App extends React.Component<any, any>
                 let y = Math.min(this.mouseStart.y, this.mouseEnd.y);
                 this.graphics.drawRect(x, y, w, h);
                 this.graphics.endFill();
+            }
+
+            if (!this.isPlanningPhase())
+            {
+                this.graphics.lineStyle(1, 0xFFFFFF);
+                this.graphics.beginFill(0x00FF00);
+                let w = renderer.width;
+                w *= (this.roundTimer / this.roundLength);
+                let margin = 4;
+                w -= margin * 2;
+                if (w < 0)
+                    w = 0;
+                this.graphics.drawRect(margin, margin, w, 8);
             }
            
             renderer.render(this.stage);
