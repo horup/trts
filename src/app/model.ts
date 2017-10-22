@@ -1,4 +1,6 @@
 import * as PIXI from 'pixi.js';
+import {vec2} from 'gl-matrix';
+
 export class State
 {
     players:Player[] = [];
@@ -9,7 +11,7 @@ export class State
 export abstract class Effect
 {
     life = 60;
-    pos = {x:0, y:0};
+    pos:vec2 = vec2.create();
     abstract draw(g:PIXI.Graphics);
 }
 
@@ -20,8 +22,8 @@ export class Damage extends Effect
     {
         super();
         this.life = this.startLife;
-        this.pos.x = x;
-        this.pos.y = y;
+        this.pos[0] = x;
+        this.pos[1] = y;
     }
 
     draw(g:PIXI.Graphics)
@@ -29,7 +31,7 @@ export class Damage extends Effect
         this.life--;
         g.lineStyle(3, 0xFF0000);
         g.beginFill(0x0, this.life / this.startLife);
-        g.drawCircle(this.pos.x, this.pos.y, 12);
+        g.drawCircle(this.pos[0], this.pos[1], 12);
     }
 }
 
@@ -61,8 +63,8 @@ export class AI
             {
                 if (u != this.unit)
                 {
-                    let vx = u.pos.x - this.unit.pos.x;
-                    let vy = u.pos.y - this.unit.pos.y;
+                    let vx = u.pos[0] - this.unit.pos[0];
+                    let vy = u.pos[1] - this.unit.pos[1];
                     let l = Math.sqrt(vx * vx + vy * vy);
                     if (u.owner != this.unit.owner && u.health > 0)
                     {
@@ -72,7 +74,7 @@ export class AI
                             if (this.unit.attackCooldown <= 0)
                             {
                                 u.health--;
-                                let damage = new Damage(u.pos.x, u.pos.y);
+                                let damage = new Damage(u.pos[0], u.pos[1]);
                                 state.effects.push(damage);
                                 this.unit.attackCooldown = 10;
                             }
@@ -130,7 +132,7 @@ export class AI
 export class Unit
 {
     owner:Player;
-    pos:{x:number, y:number} = {x:0, y:0};
+    pos:vec2 = vec2.create();
     health:number = 5;
     radius:number = 8;
     selected = false;
@@ -171,13 +173,13 @@ export class MoveOrder extends Order
     pos = {x:0, y:0};
     execute(unit:Unit)
     {
-        let vx = this.pos.x - unit.pos.x;
-        let vy = this.pos.y - unit.pos.y;
+        let vx = this.pos.x - unit.pos[0];
+        let vy = this.pos.y - unit.pos[1];
         let l = Math.sqrt(vx*vx + vy*vy);
         vx /= l;
         vy /= l;
-        unit.pos.x += vx;
-        unit.pos.y += vy;
+        unit.pos[0] += vx;
+        unit.pos[1] += vy;
         if (l < 16)
         {
             unit.order = null;

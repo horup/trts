@@ -34,8 +34,8 @@ export default class App extends React.Component<any, any>
             {
                 let u = new Unit();
                 u.owner = player;
-                u.pos.x = x;
-                u.pos.y = y + i * 32; 
+                u.pos[0] = x;
+                u.pos[1] = y + i * 32; 
                 this.state.units.push(u);
             }
         }
@@ -118,7 +118,7 @@ export default class App extends React.Component<any, any>
                     let x = Math.min(this.mouseStart.x, this.mouseEnd.x);
                     let y = Math.min(this.mouseStart.y, this.mouseEnd.y);
                     let rect = new PIXI.Rectangle(x, y, w, h);
-                    if (rect.contains(u.pos.x, u.pos.y))
+                    if (rect.contains(u.pos[0], u.pos[1]))
                     {
                         u.selected = true;
                     }
@@ -163,22 +163,22 @@ export default class App extends React.Component<any, any>
                 {
                     if (u != u2)
                     {
-                        let vx = u.pos.x - u2.pos.x;
-                        let vy = u.pos.y - u2.pos.y;
+                        let vx = u.pos[0] - u2.pos[0];
+                        let vy = u.pos[1] - u2.pos[1];
                         let l = Math.sqrt(vx * vx + vy * vy);
                         let diff = (u.radius + u2.radius - l) / 2;
                         if (l < u.radius + u2.radius)
                         {
-                            u.pos.x += vx / l * diff;
-                            u.pos.y += vy / l * diff;
-                            u2.pos.x -= vx / l * diff;
-                            u2.pos.y -= vy / l * diff;
+                            u.pos[0] += vx / l * diff;
+                            u.pos[1] += vy / l * diff;
+                            u2.pos[0] -= vx / l * diff;
+                            u2.pos[1] -= vy / l * diff;
                         }
                     }
                 }
 
                 this.graphics.beginFill(u.owner.color);
-                this.graphics.drawCircle(u.pos.x, u.pos.y, u.radius);
+                this.graphics.drawCircle(u.pos[0], u.pos[1], u.radius);
                 this.graphics.endFill();
 
                 if (u.order != null && this.isPlanningPhase())
@@ -186,7 +186,7 @@ export default class App extends React.Component<any, any>
                     if (u.order instanceof MoveOrder)
                     {
                         this.graphics.beginFill(0xFF0000);
-                        this.graphics.moveTo(u.pos.x, u.pos.y);
+                        this.graphics.moveTo(u.pos[0], u.pos[1]);
                         this.graphics.lineTo(u.order.pos.x, u.order.pos.y);
                         this.graphics.endFill();
                     }
@@ -225,9 +225,9 @@ export default class App extends React.Component<any, any>
                     if (u.selected)
                     {
                         this.graphics.lineStyle(1, 0xFF0000, 0.5);
-                        this.graphics.drawCircle(u.pos.x, u.pos.y, u.attackRadius);
+                        this.graphics.drawCircle(u.pos[0], u.pos[1], u.attackRadius);
                         this.graphics.lineStyle(1, 0xFFFFFF, 0.5);
-                        this.graphics.drawCircle(u.pos.x, u.pos.y, u.scoutRadius);
+                        this.graphics.drawCircle(u.pos[0], u.pos[1], u.scoutRadius);
                     }
                 }
             }
