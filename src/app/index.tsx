@@ -72,8 +72,8 @@ export default class App extends React.Component<any, any>
                     if (u.selected)
                     {
                         let order = new MoveOrder();
-                        order.pos.x = interaction.mouse.global.x;
-                        order.pos.y = interaction.mouse.global.y;
+                        order.pos[0] = interaction.mouse.global.x;
+                        order.pos[1] = interaction.mouse.global.y;
                         u.order = order;
                     }
                 }
@@ -133,7 +133,7 @@ export default class App extends React.Component<any, any>
         {
             for (let u of this.state.units)
             {
-                u.think(this.state);
+                u.update(this.state);
             }
         }
 
@@ -187,7 +187,7 @@ export default class App extends React.Component<any, any>
                     {
                         this.graphics.beginFill(0xFF0000);
                         this.graphics.moveTo(u.pos[0], u.pos[1]);
-                        this.graphics.lineTo(u.order.pos.x, u.order.pos.y);
+                        this.graphics.lineTo(u.order.pos[0], u.order.pos[1]);
                         this.graphics.endFill();
                     }
                 }

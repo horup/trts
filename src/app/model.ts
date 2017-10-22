@@ -6,6 +6,7 @@ export class State
     players:Player[] = [];
     units:Unit[] = [];
     effects:Effect[] = [];
+
 }
 
 export abstract class Effect
@@ -140,26 +141,145 @@ export class Unit
     attackRadius:number = 8 * 10;
     scoutRadius:number = 8 * 16 * 4;
     attackCooldown = 0;
-    thinkTime = Math.floor(Math.random() * 60);
-    ai:AI = new AI(this);
+
+    target:Unit = null;
+    waypoint:vec2 = null;
+
+    moving = false;
+    attacking = false;
 
     constructor()
     {
-       this.ai
-       .followOrder()
-       .delay(15)
-       .attackClosest()
-       .moveToAttackRange()
+    }
+
+    update(state:State)
+    {
+        this.think(state);
+        this.tick(state);
+    }
+
+    tick(state:State)
+    {
+        if (this.attackCooldown > 0)
+            this.attackCooldown--;
+
+        if (this.moving)
+        {
+            if (this.waypoint != null)
+            {
+                let v = vec2.create();
+                vec2.sub(v, this.waypoint, this.pos);
+                vec2.normalize(v, v);
+                vec2.add(this.pos, this.pos, v);
+            }
+        }
     }
 
     think(state:State)
     {
-        if (this.attackCooldown > 0)
+        if (this.hasNoTarget())
         {
-            this.attackCooldown--;
+            this.findTarget(state);
+            this.followOrders(state);
         }
+        else
+        {
+            if (this.isTargetVisible(state))
+            {
+                if (this.isTargetInRange(state))
+                {
+                    this.stop();
+                    this.fire();
+                }
+                else
+                {
+                    this.ceaseFire();
+                    this.plotWaypoint(this.target.pos);
+                    this.move();
+                }
+            }
+            else
+            {
+                this.ceaseFire();
+                this.stop();
+                this.untarget();
+            }
+        }
+    }
 
-        this.ai.think(state);
+    stop()
+    {
+        this.moving = false;
+    }
+
+    move()
+    {
+        this.moving = true;
+    }
+
+    hasNoTarget()
+    {
+        return this.target == null;
+    }
+
+    untarget()
+    {
+        this.target = null;
+    }
+
+    followOrders(state:State)
+    {
+        if (this.order != null)
+        {
+            if (this.order instanceof MoveOrder)
+            {
+                this.waypoint = this.order.pos;
+                this.move();
+            }
+        }
+    }
+
+    isTargetInRange(state:State)
+    {
+        return false;
+    }
+
+    isTargetVisible(state:State)
+    {
+        return true;
+    }
+
+    findTarget(state:State)
+    {
+        let enemy = this.getClosestVisibleEnemy(state);
+        if (enemy != null)
+        {
+            this.target = enemy;
+        }
+    }
+
+    
+    getClosestVisibleEnemy(state:State):Unit
+    {
+        let enemies = state.units.filter((u) => u.owner != this.owner);
+        if (enemies.length > 0)
+            return enemies[0];
+        return null;
+    }
+
+    fire()
+    {
+        this.attacking = true;
+    }
+
+    ceaseFire()
+    {
+        this.attacking = false;
+    }
+
+    plotWaypoint(waypoint:vec2)
+    {
+        this.waypoint = waypoint;
     }
 }
 
@@ -170,10 +290,10 @@ export abstract class Order
 
 export class MoveOrder extends Order
 {
-    pos = {x:0, y:0};
+    pos = vec2.create();
     execute(unit:Unit)
     {
-        let vx = this.pos.x - unit.pos[0];
+       /* let vx = this.pos.x - unit.pos[0];
         let vy = this.pos.y - unit.pos[1];
         let l = Math.sqrt(vx*vx + vy*vy);
         vx /= l;
@@ -183,7 +303,7 @@ export class MoveOrder extends Order
         if (l < 16)
         {
             unit.order = null;
-        }
+        }*/
     }
 }
 
