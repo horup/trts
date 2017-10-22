@@ -133,10 +133,7 @@ export default class App extends React.Component<any, any>
         {
             for (let u of this.state.units)
             {
-                if (u.order != null)
-                {
-                    u.order.execute(u);
-                }
+                u.think(this.state);
             }
         }
 
@@ -145,10 +142,7 @@ export default class App extends React.Component<any, any>
             if (this.roundTimer > 0)
             {
                 conquer();
-                for (let u of this.state.units)
-                {
-                    u.think(this.state);
-                }
+                
                 this.roundTimer--;
             }
 

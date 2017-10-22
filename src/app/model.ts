@@ -33,6 +33,100 @@ export class Damage extends Effect
     }
 }
 
+export class AI
+{
+    unit:Unit;
+    pattern:((state:State)=>boolean)[] = [];
+    constructor(unit:Unit)
+    {
+        this.unit = unit;
+    }
+
+    think(state:State)
+    {
+        for (let f of this.pattern)
+        {
+            if (!f(state))
+            {
+                break;
+            }
+        }
+    }
+
+    attackClosest()
+    {
+        this.pattern.push((state:State)=>
+        {
+            for (let u of state.units)
+            {
+                if (u != this.unit)
+                {
+                    let vx = u.pos.x - this.unit.pos.x;
+                    let vy = u.pos.y - this.unit.pos.y;
+                    let l = Math.sqrt(vx * vx + vy * vy);
+                    if (u.owner != this.unit.owner && u.health > 0)
+                    {
+                        // ATTACK
+                        if (l < this.unit.attackRadius)
+                        {
+                            if (this.unit.attackCooldown <= 0)
+                            {
+                                u.health--;
+                                let damage = new Damage(u.pos.x, u.pos.y);
+                                state.effects.push(damage);
+                                this.unit.attackCooldown = 10;
+                            }
+                        }
+                    }
+                }
+            }
+            return true;
+        })
+
+        return this;
+    }
+
+    followOrder()
+    {
+        this.pattern.push((state:State)=>
+        {
+            if (this.unit.order != null)
+            {
+                this.unit.order.execute(this.unit);
+            }
+
+            return true;
+        });
+        return this;
+    }
+
+    moveToAttackRange()
+    {
+        return this;
+    }
+
+    delay(length:number)
+    {
+        let timer = 0;
+        this.pattern.push(()=>
+        {
+            if (timer == length)
+            {
+                timer = 0;
+                return true;
+            }
+            else
+            {
+                timer++;
+            }
+            
+            return false;
+        });
+
+        return this;
+    }
+}
+
 export class Unit
 {
     owner:Player;
@@ -42,9 +136,19 @@ export class Unit
     selected = false;
     order:Order = null;
     attackRadius:number = 8 * 10;
-    scoutRadius:number = 8 * 16;
+    scoutRadius:number = 8 * 16 * 4;
     attackCooldown = 0;
     thinkTime = Math.floor(Math.random() * 60);
+    ai:AI = new AI(this);
+
+    constructor()
+    {
+       this.ai
+       .followOrder()
+       .delay(15)
+       .attackClosest()
+       .moveToAttackRange()
+    }
 
     think(state:State)
     {
@@ -52,38 +156,8 @@ export class Unit
         {
             this.attackCooldown--;
         }
-        
-        this.thinkTime++
-        if ((this.thinkTime % 60) != 0)
-            return;
 
-        for (let u of state.units)
-        {
-            if (u != this)
-            {
-                let vx = u.pos.x - this.pos.x;
-                let vy = u.pos.y - this.pos.y;
-                let l = Math.sqrt(vx * vx + vy * vy);
-                if (u.owner != this.owner && u.health > 0)
-                {
-                    // ATTACK
-                    if (l < this.attackRadius)
-                    {
-                        if (this.attackCooldown <= 0)
-                        {
-                            u.health--;
-                            let damage = new Damage(u.pos.x, u.pos.y);
-                            state.effects.push(damage);
-                            this.attackCooldown = 10;
-                        }
-                    }
-                    else if (l < this.scoutRadius)
-                    {
-                        console.log('getting closer');
-                    }
-                }
-            }
-        }
+        this.ai.think(state);
     }
 }
 
