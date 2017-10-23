@@ -139,7 +139,7 @@ export class Unit
     selected = false;
     order:Order = null;
     attackRadius:number = 8 * 10;
-    scoutRadius:number = 8 * 16 * 4;
+    scoutRadius:number = 8 * 16;
     attackCooldown = 0;
 
     target:Unit = null;
@@ -147,6 +147,8 @@ export class Unit
 
     moving = false;
     attacking = false;
+    
+    updates = Math.floor(Math.random() * 60);
 
     constructor()
     {
@@ -154,8 +156,13 @@ export class Unit
 
     update(state:State)
     {
-        this.think(state);
+        if (this.updates % 30 == 0)
+        {
+            this.think(state);
+        }
+
         this.tick(state);
+        this.updates++;
     }
 
     tick(state:State)
@@ -171,6 +178,30 @@ export class Unit
                 vec2.sub(v, this.waypoint, this.pos);
                 vec2.normalize(v, v);
                 vec2.add(this.pos, this.pos, v);
+            }
+        }
+
+        if (this.attacking)
+        {
+            if (this.attackCooldown == 0)
+            {
+                if (this.target != null)
+                {
+                    state.effects.push(new Damage(this.target.pos[0], this.target.pos[1]));
+                
+                    this.target.health--;
+                    if (this.target.health <= 0)
+                    {
+                        this.target = null;
+                    }
+
+                    this.attackCooldown = 30;       
+                }
+            }
+
+            if (this.attackCooldown > 0)
+            {
+                this.attackCooldown--;
             }
         }
     }
@@ -241,6 +272,16 @@ export class Unit
 
     isTargetInRange(state:State)
     {
+        if (this.target != null)
+        {
+            let v = vec2.create();
+            vec2.sub(v, this.pos, this.target.pos);
+            if (vec2.length(v) <= this.attackRadius)
+            {
+                return true;
+            }
+        }
+
         return false;
     }
 
