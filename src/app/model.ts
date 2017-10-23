@@ -261,9 +261,38 @@ export class Unit
     
     getClosestVisibleEnemy(state:State):Unit
     {
-        let enemies = state.units.filter((u) => u.owner != this.owner);
+        let v = vec2.create();
+        let enemies = state.units.filter((u) => 
+        {
+            if (u.owner != this.owner)
+            {
+                vec2.sub(v, this.pos, u.pos);
+                let l = vec2.length(v);
+                
+                if (l < this.scoutRadius)
+                {
+                    return u;
+                }
+            }
+        });
+
         if (enemies.length > 0)
-            return enemies[0];
+        {
+            let lastLength = Number.MAX_VALUE;
+            let candidate  = 0;
+            for (let i = 0; i < enemies.length; i++)
+            {
+                let l = vec2.length(vec2.sub(v, this.pos, enemies[i].pos));
+                if (l < lastLength)
+                {
+                    lastLength = l;
+                    candidate = i;
+                }
+            }
+
+            return enemies[candidate];
+        }
+
         return null;
     }
 
