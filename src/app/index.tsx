@@ -3,6 +3,7 @@ import { Container, Button, Form, FormGroup, Label, Input, FormText } from 'reac
 import { HashRouter, Route, Link } from 'react-router-dom';
 import * as PIXI from 'pixi.js';
 import {State, Unit, Player, MoveOrder} from './model';
+import {vec2} from 'gl-matrix';
 
 export default class App extends React.Component<any, any>
 {
@@ -68,13 +69,34 @@ export default class App extends React.Component<any, any>
             }
             else
             {
+                let i = 0;
+                let start = vec2.create();
+                let end = vec2.create();
+                end[0] = interaction.mouse.global.x;
+                end[1] = interaction.mouse.global.y;
+                let v = vec2.create();
+                for (let u of this.state.units)
+                {
+                    if (u.selected)
+                    {
+                        vec2.add(start, start, u.pos);
+                        i++;
+                    }
+                }
+
+                if (i > 0)
+                {
+                    vec2.divide(start, start, [i, i]);
+                    vec2.subtract(v, end, start);
+                }
+
                 for (let u of this.state.units)
                 {
                     if (u.selected)
                     {
                         let order = new MoveOrder(this.attackMove);
-                        order.pos[0] = interaction.mouse.global.x;
-                        order.pos[1] = interaction.mouse.global.y;
+                        order.pos[0] = u.pos[0] + v[0];
+                        order.pos[1] = u.pos[1] + v[1];
                         u.order = order;
                     }
                 }
@@ -133,24 +155,27 @@ export default class App extends React.Component<any, any>
                 return;
             if (e.button == 0)
             {
-                for (let u of this.state.units)
-                    u.selected = false;
-
-                for (let u of this.state.units)
+                if (this.mouseStart != null && this.mouseEnd != null)
                 {
-                    let w = Math.abs(this.mouseStart.x - this.mouseEnd.x);
-                    let h = Math.abs(this.mouseStart.y - this.mouseEnd.y);
-                    let x = Math.min(this.mouseStart.x, this.mouseEnd.x);
-                    let y = Math.min(this.mouseStart.y, this.mouseEnd.y);
-                    let rect = new PIXI.Rectangle(x, y, w, h);
-                    if (rect.contains(u.pos[0], u.pos[1]))
-                    {
-                        u.selected = true;
-                    }
-                }
+                    for (let u of this.state.units)
+                        u.selected = false;
 
-                this.mouseEnd = null;
-                this.mouseStart = null;
+                    for (let u of this.state.units)
+                    {
+                        let w = Math.abs(this.mouseStart.x - this.mouseEnd.x);
+                        let h = Math.abs(this.mouseStart.y - this.mouseEnd.y);
+                        let x = Math.min(this.mouseStart.x, this.mouseEnd.x);
+                        let y = Math.min(this.mouseStart.y, this.mouseEnd.y);
+                        let rect = new PIXI.Rectangle(x, y, w, h);
+                        if (rect.contains(u.pos[0], u.pos[1]))
+                        {
+                            u.selected = true;
+                        }
+                    }
+
+                    this.mouseEnd = null;
+                    this.mouseStart = null;
+                }
             }
         });
 
