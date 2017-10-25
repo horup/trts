@@ -1,6 +1,5 @@
 import * as React from 'react';
 import { Container, Button, Form, FormGroup, Label, Input, FormText } from 'reactstrap';
-import { DatetimePicker } from '../extensions';
 import { HashRouter, Route, Link } from 'react-router-dom';
 import * as PIXI from 'pixi.js';
 import {State, Unit, Player, MoveOrder} from './model';
@@ -80,7 +79,7 @@ export default class App extends React.Component<any, any>
             }
         });
 
-        this.canvas.addEventListener('mousemove', ()=>
+        document.addEventListener('mousemove', ()=>
         {
             if (!this.isPlanningPhase())
                 return;
@@ -91,18 +90,25 @@ export default class App extends React.Component<any, any>
             }
         });
 
-        document.addEventListener('keypress', ()=>
+        document.addEventListener('keypress', (e)=>
         {
-            if (!this.isPlanningPhase())
-                return;
-
-            if (this.roundTimer == 0)
+            if (e.keyCode == 32)
             {
-                this.roundTimer = this.roundLength;
+                if (!this.isPlanningPhase())
+                    return;
+
+                if (this.roundTimer == 0)
+                {
+                    this.roundTimer = this.roundLength;
+                }
+            }
+            else if (e.keyCode == 115) // S
+            {
+
             }
         });
 
-        this.canvas.addEventListener('mouseup', (e) =>
+        document.addEventListener('mouseup', (e) =>
         {
             if (!this.isPlanningPhase())
                 return;
