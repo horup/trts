@@ -9,11 +9,7 @@ import App from './app';
 
 const Index = () => {
     return (
-        <HashRouter>
-            <Container fluid={true}>
-                <App />
-            </Container>
-        </HashRouter>)
+        <App />
 }
 
 var div = document.createElement("div");

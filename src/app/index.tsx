@@ -32,7 +32,7 @@ export default class App extends React.Component<any, any>
         this.state.players.push(player);
         for (let i = 0; i < 3; i++)
         {
-            for (let x = 200; x <= 400; x += 32)
+            for (let x = 300; x <= 500; x += 32)
             {
                 let u = new Unit();
                 u.owner = player;
@@ -46,9 +46,9 @@ export default class App extends React.Component<any, any>
     componentDidMount()
     {
         this.spawnSet(28, new Player(0xFF0000));
-        this.spawnSet(392, new Player(0x00FF00));
+        this.spawnSet(492, new Player(0x00FF00));
         this.stage = new PIXI.Container();
-        let renderer = PIXI.autoDetectRenderer(640, 480, {view: this.canvas, antialias:false}); 
+        let renderer = PIXI.autoDetectRenderer(800, 600, {view: this.canvas, antialias:false}); 
         let interaction = new PIXI.interaction.InteractionManager(renderer);
         this.graphics = new PIXI.Graphics();
         
@@ -324,8 +324,22 @@ export default class App extends React.Component<any, any>
 
     render() {
         return (
-            <div>
-                <canvas width={400} height={400} ref={(ref)=>this.canvas = ref} />
+            <div style={{width:'100%'}}>
+                <div style={{width:'800px', margin:'0 auto'}}>
+                    <div>
+                        <h3>TRTS Concept Test</h3>
+                        <ul>
+                            <li>Left click and drag to select units.</li>
+                            <li>Right click to issue move orders.</li>
+                            <li>Press S to stop and cancel any orders issued.</li>
+                            <li>Press A to cycle between attack move or normal move.</li>
+                            <li>Press Space to execute.</li>
+                            <li>Press F5 to refresh concept test.</li>
+                        </ul>
+                    </div>
+                    <canvas width={800} height={600} ref={(ref)=>this.canvas = ref} />
+                   
+                </div>
             </div>
         )
     }
