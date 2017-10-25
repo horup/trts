@@ -208,10 +208,11 @@ export class Unit
 
     think(state:State)
     {
-        if (this.hasNoTarget())
+        if (this.hasMoveOrder() || this.hasNoTarget())
         {
             this.findTarget(state);
             this.followOrders(state);
+            this.ceaseFire();
         }
         else
         {
@@ -251,6 +252,16 @@ export class Unit
     hasNoTarget()
     {
         return this.target == null;
+    }
+
+    hasMoveOrder()
+    {
+        if (this.order != null && this.order instanceof MoveOrder)
+        {
+            return !this.order.attackMove;
+        }
+
+        return false;
     }
 
     untarget()
@@ -360,7 +371,13 @@ export abstract class Order
 
 export class MoveOrder extends Order
 {
+    attackMove = false;
     pos = vec2.create();
+    constructor(attackMove = false)
+    {
+        super();
+        this.attackMove = attackMove;
+    }
     execute(unit:Unit)
     {
        /* let vx = this.pos.x - unit.pos[0];

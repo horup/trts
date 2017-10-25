@@ -6,6 +6,7 @@ import {State, Unit, Player, MoveOrder} from './model';
 
 export default class App extends React.Component<any, any>
 {
+    attackMove = true;
     roundTimer:number = 0;
     roundLength:number = 60 * 3;
     mouseStart:PIXI.Point;
@@ -19,6 +20,7 @@ export default class App extends React.Component<any, any>
     {
         super();
         document.addEventListener('contextmenu', e=> event.preventDefault());
+        document.body.style.cursor = "crosshair";
         
     }
 
@@ -70,7 +72,7 @@ export default class App extends React.Component<any, any>
                 {
                     if (u.selected)
                     {
-                        let order = new MoveOrder();
+                        let order = new MoveOrder(this.attackMove);
                         order.pos[0] = interaction.mouse.global.x;
                         order.pos[1] = interaction.mouse.global.y;
                         u.order = order;
@@ -85,9 +87,9 @@ export default class App extends React.Component<any, any>
                 return;
             
                 if (this.mouseStart != null)
-            {
-                this.mouseEnd = interaction.mouse.global.clone();
-            }
+                {
+                    this.mouseEnd = interaction.mouse.global.clone();
+                }
         });
 
         document.addEventListener('keypress', (e)=>
@@ -104,6 +106,23 @@ export default class App extends React.Component<any, any>
             }
             else if (e.keyCode == 115) // S
             {
+                for (let u of this.state.units)
+                {
+                    if (u.selected)
+                    {
+                        u.order = null;
+                        u.stop();
+                    }
+                }
+            }
+            else if (e.keyCode == 97) // A
+            {
+                
+               this.attackMove = !this.attackMove;
+                if (!this.attackMove)
+                    document.body.style.cursor = "move";
+                else
+                    document.body.style.cursor = "crosshair";
 
             }
         });
@@ -191,7 +210,12 @@ export default class App extends React.Component<any, any>
                 {
                     if (u.order instanceof MoveOrder)
                     {
-                        this.graphics.beginFill(0xFF0000);
+                        if (u.order.attackMove)
+                            this.graphics.lineStyle(1, 0xFF0000);
+                        else
+                            this.graphics.lineStyle(1, 0xFFFFFF);
+
+                        this.graphics.beginFill(0xFFFFFF);
                         this.graphics.moveTo(u.pos[0], u.pos[1]);
                         this.graphics.lineTo(u.order.pos[0], u.order.pos[1]);
                         this.graphics.endFill();
