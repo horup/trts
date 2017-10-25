@@ -10378,7 +10378,7 @@ var React = __webpack_require__(5);
 var Dom = __webpack_require__(49);
 var app_1 = __webpack_require__(294);
 var Index = function () {
-    return (React.createElement(app_1.default, null));
+    return React.createElement(app_1.default, null);
 };
 var div = document.createElement("div");
 document.body.appendChild(div);
