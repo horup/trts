@@ -298,6 +298,7 @@ export default class App extends React.Component<any, any>
             let deadUnits = this.state.units.filter((u)=>u.health <= 0);
             for (let u of deadUnits)
             {
+                u.target = null;
                 this.state.units.splice(this.state.units.indexOf(u), 1);
             }
 

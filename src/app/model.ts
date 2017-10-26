@@ -156,7 +156,7 @@ export class Unit
 
     update(state:State)
     {
-        if (this.updates % 30 == 0)
+        if (this.updates % 10 == 0)
         {
             this.think(state);
         }
@@ -167,6 +167,9 @@ export class Unit
 
     tick(state:State)
     {
+        if (this.target != null && this.target.health <= 0)
+            this.target = null;
+
         if (this.attackCooldown > 0)
             this.attackCooldown--;
 
@@ -211,8 +214,11 @@ export class Unit
         if (this.hasMoveOrder() || this.hasNoTarget())
         {
             this.findTarget(state);
-            this.followOrders(state);
-            this.ceaseFire();
+            if (this.hasNoTarget())
+            {
+                this.followOrders(state);
+                this.ceaseFire();
+            }
         }
         else
         {
