@@ -160,7 +160,7 @@ export default class App extends React.Component<any, any>
                     for (let u of this.state.units)
                         u.selected = false;
 
-                    for (let u of this.state.units)
+              /*      for (let u of this.state.units)
                     {
                         let w = Math.abs(this.mouseStart.x - this.mouseEnd.x);
                         let h = Math.abs(this.mouseStart.y - this.mouseEnd.y);
@@ -171,7 +171,18 @@ export default class App extends React.Component<any, any>
                         {
                             u.selected = true;
                         }
-                    }
+                    }*/
+
+                    let w = Math.abs(this.mouseStart.x - this.mouseEnd.x);
+                    let h = Math.abs(this.mouseStart.y - this.mouseEnd.y);
+                    let x = Math.min(this.mouseStart.x, this.mouseEnd.x);
+                    let y = Math.min(this.mouseStart.y, this.mouseEnd.y);
+
+
+                    let v = vec2.create();
+                    v[0] = this.mouseStart.x;
+                    v[1] = this.mouseStart.y;
+                    this.state.grid.getUnitsWithinRect(x, y, w, h).forEach((u)=>u.selected = true);
 
                     this.mouseEnd = null;
                     this.mouseStart = null;
@@ -189,6 +200,7 @@ export default class App extends React.Component<any, any>
 
         let f = () =>
         {
+            this.state.grid.update(this.state);
             if (this.roundTimer > 0)
             {
                 conquer();

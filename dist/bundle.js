@@ -45726,17 +45726,26 @@ var App = /** @class */ (function (_super) {
                         var u = _a[_i];
                         u.selected = false;
                     }
-                    for (var _b = 0, _c = _this.state.units; _b < _c.length; _b++) {
-                        var u = _c[_b];
-                        var w = Math.abs(_this.mouseStart.x - _this.mouseEnd.x);
-                        var h = Math.abs(_this.mouseStart.y - _this.mouseEnd.y);
-                        var x = Math.min(_this.mouseStart.x, _this.mouseEnd.x);
-                        var y = Math.min(_this.mouseStart.y, _this.mouseEnd.y);
-                        var rect = new PIXI.Rectangle(x, y, w, h);
-                        if (rect.contains(u.pos[0], u.pos[1])) {
-                            u.selected = true;
-                        }
-                    }
+                    /*      for (let u of this.state.units)
+                          {
+                              let w = Math.abs(this.mouseStart.x - this.mouseEnd.x);
+                              let h = Math.abs(this.mouseStart.y - this.mouseEnd.y);
+                              let x = Math.min(this.mouseStart.x, this.mouseEnd.x);
+                              let y = Math.min(this.mouseStart.y, this.mouseEnd.y);
+                              let rect = new PIXI.Rectangle(x, y, w, h);
+                              if (rect.contains(u.pos[0], u.pos[1]))
+                              {
+                                  u.selected = true;
+                              }
+                          }*/
+                    var w = Math.abs(_this.mouseStart.x - _this.mouseEnd.x);
+                    var h = Math.abs(_this.mouseStart.y - _this.mouseEnd.y);
+                    var x = Math.min(_this.mouseStart.x, _this.mouseEnd.x);
+                    var y = Math.min(_this.mouseStart.y, _this.mouseEnd.y);
+                    var v = gl_matrix_1.vec2.create();
+                    v[0] = _this.mouseStart.x;
+                    v[1] = _this.mouseStart.y;
+                    _this.state.grid.getUnitsWithinRect(x, y, w, h).forEach(function (u) { return u.selected = true; });
                     _this.mouseEnd = null;
                     _this.mouseStart = null;
                 }
@@ -45749,6 +45758,7 @@ var App = /** @class */ (function (_super) {
             }
         };
         var f = function () {
+            _this.state.grid.update(_this.state);
             if (_this.roundTimer > 0) {
                 conquer();
                 _this.roundTimer--;
@@ -66573,6 +66583,7 @@ var State = /** @class */ (function () {
         this.players = [];
         this.units = [];
         this.effects = [];
+        this.grid = new Grid(128, 128);
     }
     return State;
 }());
@@ -66604,75 +66615,77 @@ var Damage = /** @class */ (function (_super) {
     return Damage;
 }(Effect));
 exports.Damage = Damage;
-var AI = /** @class */ (function () {
-    function AI(unit) {
-        this.pattern = [];
-        this.unit = unit;
-    }
-    AI.prototype.think = function (state) {
-        for (var _i = 0, _a = this.pattern; _i < _a.length; _i++) {
-            var f = _a[_i];
-            if (!f(state)) {
-                break;
-            }
+var Grid = /** @class */ (function () {
+    function Grid(w, h) {
+        this.w = 0;
+        this.h = 0;
+        this.size = 8;
+        this.w = w;
+        this.h = h;
+        this.grid = new Array(w);
+        for (var i = 0; i < this.grid.length; i++) {
+            this.grid[i] = new Array(h);
         }
+    }
+    Grid.prototype.set = function (unit) {
+        var x = Math.floor(unit.pos[0] / this.size);
+        var y = Math.floor(unit.pos[1] / this.size);
+        if (x < 0 || x > this.w || y < 0 || y > this.h) {
+            return null;
+        }
+        this.grid[x][y] = unit;
     };
-    AI.prototype.attackClosest = function () {
-        var _this = this;
-        this.pattern.push(function (state) {
-            for (var _i = 0, _a = state.units; _i < _a.length; _i++) {
-                var u = _a[_i];
-                if (u != _this.unit) {
-                    var vx = u.pos[0] - _this.unit.pos[0];
-                    var vy = u.pos[1] - _this.unit.pos[1];
-                    var l = Math.sqrt(vx * vx + vy * vy);
-                    if (u.owner != _this.unit.owner && u.health > 0) {
-                        // ATTACK
-                        if (l < _this.unit.attackRadius) {
-                            if (_this.unit.attackCooldown <= 0) {
-                                u.health--;
-                                var damage = new Damage(u.pos[0], u.pos[1]);
-                                state.effects.push(damage);
-                                _this.unit.attackCooldown = 10;
-                            }
-                        }
+    Grid.prototype.get = function (pos) {
+        var x = Math.floor(pos[0]);
+        var y = Math.floor(pos[1]);
+        if (x < this.w || x > this.w || y < 0 || y > this.h) {
+            return null;
+        }
+        return this.grid[x][y];
+    };
+    Grid.prototype.getUnitsWithinRect = function (rx, ry, rw, rh) {
+        var units = [];
+        var x = Math.floor(rx / this.size);
+        var y = Math.floor(ry / this.size);
+        var w = Math.ceil(rw / this.size);
+        var h = Math.ceil(rh / this.size);
+        for (var i = x; i < x + w; i++) {
+            for (var j = y; j < y + h; j++) {
+                if (i > 0 && i < this.w && j > 0 && j < this.h) {
+                    var u = this.grid[i][j];
+                    if (u != null && u.pos[0] >= rx && u.pos[0] <= rx + rw && u.pos[1] >= ry && u.pos[1] <= ry + rh) {
+                        units.push(u);
                     }
                 }
             }
-            return true;
-        });
-        return this;
+        }
+        return units;
     };
-    AI.prototype.followOrder = function () {
-        var _this = this;
-        this.pattern.push(function (state) {
-            if (_this.unit.order != null) {
-                _this.unit.order.execute(_this.unit);
+    Grid.prototype.getAll = function (pos, radius) {
+        var units = [];
+        var x = Math.floor((pos[0] - radius) / this.size);
+        var y = Math.floor((pos[1] - radius) / this.size);
+        var r = Math.ceil(radius / this.size);
+        for (var i = x; i < x + r * 2; i++) {
+            for (var j = y; j < y + r * 2; j++) {
+                if (i > 0 && i < this.w && j > 0 && j < this.h) {
+                    var u = this.grid[i][j];
+                    if (u != null)
+                        units.push(u);
+                }
             }
-            return true;
-        });
-        return this;
+        }
+        return units;
     };
-    AI.prototype.moveToAttackRange = function () {
-        return this;
+    Grid.prototype.update = function (state) {
+        for (var _i = 0, _a = state.units; _i < _a.length; _i++) {
+            var unit = _a[_i];
+            this.set(unit);
+        }
     };
-    AI.prototype.delay = function (length) {
-        var timer = 0;
-        this.pattern.push(function () {
-            if (timer == length) {
-                timer = 0;
-                return true;
-            }
-            else {
-                timer++;
-            }
-            return false;
-        });
-        return this;
-    };
-    return AI;
+    return Grid;
 }());
-exports.AI = AI;
+exports.Grid = Grid;
 var Unit = /** @class */ (function () {
     function Unit() {
         this.pos = gl_matrix_1.vec2.create();

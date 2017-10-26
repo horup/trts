@@ -6,6 +6,7 @@ export class State
     players:Player[] = [];
     units:Unit[] = [];
     effects:Effect[] = [];
+    grid:Grid = new Grid(128, 128);
 
 }
 
@@ -36,97 +37,103 @@ export class Damage extends Effect
     }
 }
 
-export class AI
+export class Grid
 {
-    unit:Unit;
-    pattern:((state:State)=>boolean)[] = [];
-    constructor(unit:Unit)
-    {
-        this.unit = unit;
-    }
+    grid:Unit[][];
+    w = 0;
+    h = 0;
+    size = 8;
 
-    think(state:State)
+    constructor(w:number, h:number)
     {
-        for (let f of this.pattern)
+        this.w = w;
+        this.h = h;
+        this.grid = new Array(w);
+        for (let i = 0; i < this.grid.length; i++)
         {
-            if (!f(state))
-            {
-                break;
-            }
+            this.grid[i] = new Array(h);
         }
     }
 
-    attackClosest()
+    set(unit:Unit)
     {
-        this.pattern.push((state:State)=>
+        let x = Math.floor(unit.pos[0] / this.size);
+        let y = Math.floor(unit.pos[1] / this.size);
+        if (x < 0 || x > this.w || y < 0 || y > this.h)
         {
-            for (let u of state.units)
+            return null;
+        }
+
+        this.grid[x][y] = unit;
+    }
+
+    get(pos:vec2)
+    {
+        let x = Math.floor(pos[0]);
+        let y = Math.floor(pos[1]);
+
+        if (x < this.w || x > this.w || y < 0 || y > this.h)
+        {
+            return null;
+        }
+
+        return this.grid[x][y];
+    }
+
+    getUnitsWithinRect(rx:number, ry:number, rw:number, rh:number)
+    {
+        let units:Unit[] = [];
+        let x = Math.floor(rx / this.size);
+        let y = Math.floor(ry / this.size);
+        let w = Math.ceil(rw / this.size);
+        let h = Math.ceil(rh / this.size);
+
+        for (let i = x; i < x + w; i++)
+        {
+            for (let j = y; j < y + h; j++)
             {
-                if (u != this.unit)
+                if (i > 0 && i < this.w && j > 0 && j < this.h)
                 {
-                    let vx = u.pos[0] - this.unit.pos[0];
-                    let vy = u.pos[1] - this.unit.pos[1];
-                    let l = Math.sqrt(vx * vx + vy * vy);
-                    if (u.owner != this.unit.owner && u.health > 0)
+                    let u = this.grid[i][j];
+                    if (u != null && u.pos[0] >= rx && u.pos[0] <= rx + rw && u.pos[1] >= ry && u.pos[1] <= ry + rh)
                     {
-                        // ATTACK
-                        if (l < this.unit.attackRadius)
-                        {
-                            if (this.unit.attackCooldown <= 0)
-                            {
-                                u.health--;
-                                let damage = new Damage(u.pos[0], u.pos[1]);
-                                state.effects.push(damage);
-                                this.unit.attackCooldown = 10;
-                            }
-                        }
+                        units.push(u);
                     }
                 }
             }
-            return true;
-        })
+        }
 
-        return this;
+        return units;
     }
 
-    followOrder()
+    getAll(pos:vec2, radius:number)
     {
-        this.pattern.push((state:State)=>
+        let units:Unit[] = [];
+        let x = Math.floor((pos[0] - radius) / this.size);
+        let y = Math.floor((pos[1] - radius) / this.size);
+        let r = Math.ceil(radius / this.size);
+        for (let i = x; i < x + r * 2; i++)
         {
-            if (this.unit.order != null)
+            for (let j = y; j < y + r * 2; j++)
             {
-                this.unit.order.execute(this.unit);
+                if (i > 0 && i < this.w && j > 0 && j < this.h)
+                {
+                    let u = this.grid[i][j];
+                    if (u != null)
+                        units.push(u);
+                }
             }
+        }
 
-            return true;
-        });
-        return this;
+        return units;
     }
 
-    moveToAttackRange()
+    update(state:State)
     {
-        return this;
-    }
-
-    delay(length:number)
-    {
-        let timer = 0;
-        this.pattern.push(()=>
+        for (let unit of state.units)
         {
-            if (timer == length)
-            {
-                timer = 0;
-                return true;
-            }
-            else
-            {
-                timer++;
-            }
-            
-            return false;
-        });
-
-        return this;
+            this.set(unit);
+        }
     }
 }
 
