@@ -183,7 +183,7 @@ export class Unit
     selected = false;
     order:Order = null;
     attackRadius:number = 8 * 10;
-    scoutRadius:number = 8 * 16;
+    scoutRadius:number = 8 * 16 * 4;
     attackCooldown = 0;
 
     target:Unit = null;
@@ -279,9 +279,10 @@ export class Unit
         if (this.hasMoveOrder() || this.hasNoTarget())
         {
             this.findTarget(state);
+            this.followOrders(state);
+            
             if (this.hasNoTarget())
             {
-                this.followOrders(state);
                 this.ceaseFire();
             }
         }
