@@ -32,7 +32,7 @@ export default class App extends React.Component<any, any>
         this.state.players.push(player);
         for (let i = 0; i < 3; i++)
         {
-            for (let x = 300; x <= 500; x += 32)
+            for (let x = 100; x <= 700; x += 32)
             {
                 let u = new Unit();
                 u.owner = player;
@@ -95,8 +95,8 @@ export default class App extends React.Component<any, any>
                     if (u.selected)
                     {
                         let order = new MoveOrder(this.attackMove);
-                        order.pos[0] = u.pos[0] + v[0];
-                        order.pos[1] = u.pos[1] + v[1];
+                        order.pos[0] = end[0];
+                        order.pos[1] = end[1];
                         u.order = order;
                     }
                 }
@@ -159,25 +159,10 @@ export default class App extends React.Component<any, any>
                 {
                     for (let u of this.state.units)
                         u.selected = false;
-
-              /*      for (let u of this.state.units)
-                    {
-                        let w = Math.abs(this.mouseStart.x - this.mouseEnd.x);
-                        let h = Math.abs(this.mouseStart.y - this.mouseEnd.y);
-                        let x = Math.min(this.mouseStart.x, this.mouseEnd.x);
-                        let y = Math.min(this.mouseStart.y, this.mouseEnd.y);
-                        let rect = new PIXI.Rectangle(x, y, w, h);
-                        if (rect.contains(u.pos[0], u.pos[1]))
-                        {
-                            u.selected = true;
-                        }
-                    }*/
-
                     let w = Math.abs(this.mouseStart.x - this.mouseEnd.x);
                     let h = Math.abs(this.mouseStart.y - this.mouseEnd.y);
                     let x = Math.min(this.mouseStart.x, this.mouseEnd.x);
                     let y = Math.min(this.mouseStart.y, this.mouseEnd.y);
-
 
                     let v = vec2.create();
                     v[0] = this.mouseStart.x;
@@ -221,7 +206,7 @@ export default class App extends React.Component<any, any>
                     this.graphics.lineStyle(0, 0xFFFFFF);
                 }
 
-                for (let u2 of this.state.units)
+            /*    for (let u2 of this.state.units)
                 {
                     if (u != u2)
                     {
@@ -237,7 +222,7 @@ export default class App extends React.Component<any, any>
                             u2.pos[1] -= vy / l * diff;
                         }
                     }
-                }
+                }*/
 
                 this.graphics.beginFill(u.owner.color);
                 this.graphics.drawCircle(u.pos[0], u.pos[1], u.radius);

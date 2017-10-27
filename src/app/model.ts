@@ -76,8 +76,9 @@ export class Grid
         {
             return null;
         }
-
-        return this.grid[x][y];
+       
+        let u = this.grid[x][y];
+        return u != null && u.health > 0 ? u : null;
     }
 
     getUnitsWithinRect(rx:number, ry:number, rw:number, rh:number)
@@ -95,7 +96,7 @@ export class Grid
                 if (i > 0 && i < this.w && j > 0 && j < this.h)
                 {
                     let u = this.grid[i][j];
-                    if (u != null && u.pos[0] >= rx && u.pos[0] <= rx + rw && u.pos[1] >= ry && u.pos[1] <= ry + rh)
+                    if (u != null && u.health > 0 && u.pos[0] >= rx && u.pos[0] <= rx + rw && u.pos[1] >= ry && u.pos[1] <= ry + rh)
                     {
                         units.push(u);
                     }
@@ -105,6 +106,42 @@ export class Grid
 
         return units;
     }
+
+    getUnitsWithinRadius(cx:number, cy:number, radius:number)
+    {
+        let v = vec2.create();
+        let c = vec2.create();
+        c[0] = cx;
+        c[1] = cy;
+
+        let units:Unit[] = [];
+        let x = Math.floor((cx - radius) / this.size);
+        let y = Math.floor((cy - radius) / this.size);
+        let w = Math.ceil(radius * 2 / this.size);
+        let h = Math.ceil(radius * 2 / this.size);
+
+        for (let i = x; i < x + w; i++)
+        {
+            for (let j = y; j < y + h; j++)
+            {
+                if (i > 0 && i < this.w && j > 0 && j < this.h)
+                {
+                    let u = this.grid[i][j];
+                    if (u != null && u.health > 0) 
+                    {
+                        vec2.sub(v, c, u.pos);
+                        if (vec2.length(v) < radius)
+                        {
+                            units.push(u);
+                        }
+                    }
+                }
+            }
+        }
+
+        return units;
+    }
+
 
     getAll(pos:vec2, radius:number)
     {
@@ -119,7 +156,7 @@ export class Grid
                 if (i > 0 && i < this.w && j > 0 && j < this.h)
                 {
                     let u = this.grid[i][j];
-                    if (u != null)
+                    if (u != null && u.health > 0)
                         units.push(u);
                 }
             }
@@ -212,6 +249,27 @@ export class Unit
             if (this.attackCooldown > 0)
             {
                 this.attackCooldown--;
+            }
+        }
+
+        let units = state.grid.getUnitsWithinRadius(this.pos[0], this.pos[1], this.radius * 2)
+        {
+            for (let u of units)
+            {
+                if (u != this)
+                {
+                    let vx = this.pos[0] - u.pos[0];
+                    let vy = this.pos[1] - u.pos[1];
+                    let l = Math.sqrt(vx * vx + vy * vy);
+                    let diff = (u.radius + u.radius - l) / 2;
+                    if (l < u.radius + u.radius)
+                    {
+                        this.pos[0] += vx / l * diff;
+                        this.pos[1] += vy / l * diff;
+                        u.pos[0] -= vx / l * diff;
+                        u.pos[1] -= vy / l * diff;
+                    }
+                }
             }
         }
     }
@@ -327,19 +385,7 @@ export class Unit
     getClosestVisibleEnemy(state:State):Unit
     {
         let v = vec2.create();
-        let enemies = state.units.filter((u) => 
-        {
-            if (u.owner != this.owner)
-            {
-                vec2.sub(v, this.pos, u.pos);
-                let l = vec2.length(v);
-                
-                if (l < this.scoutRadius)
-                {
-                    return u;
-                }
-            }
-        });
+        let enemies = state.grid.getUnitsWithinRadius(this.pos[0], this.pos[1], this.scoutRadius).filter((u)=>u.owner != this.owner);
 
         if (enemies.length > 0)
         {
