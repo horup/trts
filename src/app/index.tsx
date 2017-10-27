@@ -90,14 +90,32 @@ export default class App extends React.Component<any, any>
                     vec2.subtract(v, end, start);
                 }
 
-                for (let u of this.state.units)
+                let moveRadius = 64;
+                let numSelected = this.state.units.filter((u)=>u.selected == true).length;
+                let row = 0;
+                let col = 0;
+                if (numSelected > 0)
                 {
-                    if (u.selected)
+                    let s = Math.sqrt(numSelected);
+                    console.log(s);
+                    for (let u of this.state.units)
                     {
-                        let order = new MoveOrder(this.attackMove);
-                        order.pos[0] = end[0];
-                        order.pos[1] = end[1];
-                        u.order = order;
+                        if (u.selected)
+                        {
+                            let order = new MoveOrder(this.attackMove);
+                            order.pos[0] = end[0] + col;
+                            order.pos[1] = end[1] + row;
+                            u.order = order;
+
+                            let space = 32;
+                            col += space;
+                            if (col >= s * space)
+                            {
+                                col = 0;
+                                row += space;
+                            }
+
+                        }
                     }
                 }
             }

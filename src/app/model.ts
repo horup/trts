@@ -183,7 +183,7 @@ export class Unit
     selected = false;
     order:Order = null;
     attackRadius:number = 8 * 10;
-    scoutRadius:number = 8 * 16 * 4;
+    scoutRadius:number = 8 * 16;
     attackCooldown = 0;
 
     target:Unit = null;
