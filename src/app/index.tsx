@@ -7,6 +7,8 @@ import {vec2} from 'gl-matrix';
 
 export default class App extends React.Component<any, any>
 {
+    mouseDirection:vec2 = vec2.create();
+    mouseRightDown = false;
     attackMove = true;
     roundTimer:number = 0;
     roundLength:number = 60 * 3;
@@ -45,6 +47,7 @@ export default class App extends React.Component<any, any>
 
     componentDidMount()
     {
+        let iiii = 0;
         this.spawnSet(28, new Player(0xFF0000));
         this.spawnSet(492, new Player(0x00FF00));
         this.stage = new PIXI.Container();
@@ -53,6 +56,55 @@ export default class App extends React.Component<any, any>
         this.graphics = new PIXI.Graphics();
         
         this.stage.addChild(this.graphics);
+
+        let orderUnits = ()=>
+        {
+            let selected = this.state.units.filter((u)=>u.selected == true);
+
+            if (selected.length == 0)
+                return;
+            
+            if (vec2.length(this.mouseDirection) == 0)
+            {
+                this.mouseDirection[0] = this.mouseEnd.x - selected[0].pos[0];
+                this.mouseDirection[1] = this.mouseEnd.y - selected[0].pos[1];
+                vec2.normalize(this.mouseDirection, this.mouseDirection);
+            }
+
+            let numSelected = selected.length;
+            let start = vec2.create();
+            let end = vec2.create();
+            end[0] = interaction.mouse.global.x;
+            end[1] = interaction.mouse.global.y;
+            let vx = vec2.create();
+            let vy = vec2.create();
+            vec2.copy(vx, this.mouseDirection);
+            vec2.normalize(vx, vx);
+            vec2.copy(vy, vx);
+            vec2.set(vx, -vx[1], vx[0]);
+
+            let space = 24;
+            let y = 1;
+            let maxWidth = 8;
+            for (let i = 0; i < selected.length; i++)
+            {
+                let width = Math.min(selected.length, maxWidth);
+                let pos = vec2.create();
+                vec2.copy(pos, vx);
+                let offset = (i % width) - (width / 2);
+                vec2.multiply(pos, pos, [space * offset, space * offset]);
+                vec2.add(pos, pos, end);
+                vec2.add(pos, pos, vy);
+                vec2.add(pos, pos,  [-vy[0] * y, -vy[1] * y])
+                
+                let u = selected[i];
+                let order = new MoveOrder(this.attackMove);
+                order.pos = pos;
+                u.order = order;
+                
+                y = Math.floor(i / maxWidth) * space;
+            }
+        }
 
         this.canvas.addEventListener('mousedown', (e)=>
         {
@@ -69,67 +121,28 @@ export default class App extends React.Component<any, any>
             }
             else
             {
-                let i = 0;
-                let start = vec2.create();
-                let end = vec2.create();
-                end[0] = interaction.mouse.global.x;
-                end[1] = interaction.mouse.global.y;
-                let v = vec2.create();
-                for (let u of this.state.units)
-                {
-                    if (u.selected)
-                    {
-                        vec2.add(start, start, u.pos);
-                        i++;
-                    }
-                }
-
-                if (i > 0)
-                {
-                    vec2.divide(start, start, [i, i]);
-                    vec2.subtract(v, end, start);
-                }
-
-                let moveRadius = 64;
-                let numSelected = this.state.units.filter((u)=>u.selected == true).length;
-                let row = 0;
-                let col = 0;
-                if (numSelected > 0)
-                {
-                    let s = Math.sqrt(numSelected);
-                    console.log(s);
-                    for (let u of this.state.units)
-                    {
-                        if (u.selected)
-                        {
-                            let order = new MoveOrder(this.attackMove);
-                            order.pos[0] = end[0] + col;
-                            order.pos[1] = end[1] + row;
-                            u.order = order;
-
-                            let space = 32;
-                            col += space;
-                            if (col >= s * space)
-                            {
-                                col = 0;
-                                row += space;
-                            }
-
-                        }
-                    }
-                }
+                this.mouseEnd = interaction.mouse.global.clone();
+                vec2.set(this.mouseDirection, 0, 0);
+                this.mouseRightDown = true;
             }
         });
 
-        document.addEventListener('mousemove', ()=>
+        document.addEventListener('mousemove', (e)=>
         {
             if (!this.isPlanningPhase())
                 return;
             
-                if (this.mouseStart != null)
-                {
-                    this.mouseEnd = interaction.mouse.global.clone();
-                }
+            if (this.mouseStart != null)
+            {
+                this.mouseEnd = interaction.mouse.global.clone();
+            }
+
+            if (this.mouseRightDown && this.mouseEnd != null)
+            {
+                let current = interaction.mouse.global.clone();
+                this.mouseDirection[0] = current.x - this.mouseEnd.x;
+                this.mouseDirection[1] = current.y - this.mouseEnd.y;
+            }
         });
 
         document.addEventListener('keypress', (e)=>
@@ -169,6 +182,15 @@ export default class App extends React.Component<any, any>
 
         document.addEventListener('mouseup', (e) =>
         {
+            if (e.button != 0)
+            {
+                if (this.mouseRightDown && this.mouseEnd != null)
+                {
+                    orderUnits();
+                    this.mouseRightDown = false;
+                }
+            }
+
             if (!this.isPlanningPhase())
                 return;
             if (e.button == 0)
@@ -187,10 +209,11 @@ export default class App extends React.Component<any, any>
                     v[1] = this.mouseStart.y;
                     this.state.grid.getUnitsWithinRect(x, y, w, h).forEach((u)=>u.selected = true);
 
-                    this.mouseEnd = null;
                     this.mouseStart = null;
                 }
             }
+
+            this.mouseEnd = null;
         });
 
         let conquer = () =>
@@ -290,7 +313,7 @@ export default class App extends React.Component<any, any>
 
             if (this.isPlanningPhase())
             {
-                for (let u of this.state.units)
+            /*    for (let u of this.state.units)
                 {
                     if (u.selected)
                     {
@@ -299,6 +322,14 @@ export default class App extends React.Component<any, any>
                         this.graphics.lineStyle(1, 0xFFFFFF, 0.5);
                         this.graphics.drawCircle(u.pos[0], u.pos[1], u.scoutRadius);
                     }
+                }*/
+
+                if (this.mouseStart == null && this.mouseEnd != null)
+                {
+                    this.graphics.lineStyle(1, 0xFFFFFF, 0.5);
+                    this.graphics.drawCircle(this.mouseEnd.x, this.mouseEnd.y, 8);
+                    this.graphics.moveTo(this.mouseEnd.x, this.mouseEnd.y);
+                    this.graphics.lineTo(this.mouseDirection[0] + this.mouseEnd.x, this.mouseDirection[1] + this.mouseEnd.y);
                 }
             }
 

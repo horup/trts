@@ -23819,6 +23819,8 @@ var App = /** @class */ (function (_super) {
     __extends(App, _super);
     function App(props) {
         var _this = _super.call(this) || this;
+        _this.mouseDirection = gl_matrix_1.vec2.create();
+        _this.mouseRightDown = false;
         _this.attackMove = true;
         _this.roundTimer = 0;
         _this.roundLength = 60 * 3;
@@ -23842,6 +23844,7 @@ var App = /** @class */ (function (_super) {
     };
     App.prototype.componentDidMount = function () {
         var _this = this;
+        var iiii = 0;
         this.spawnSet(28, new model_1.Player(0xFF0000));
         this.spawnSet(492, new model_1.Player(0x00FF00));
         this.stage = new PIXI.Container();
@@ -23849,6 +23852,45 @@ var App = /** @class */ (function (_super) {
         var interaction = new PIXI.interaction.InteractionManager(renderer);
         this.graphics = new PIXI.Graphics();
         this.stage.addChild(this.graphics);
+        var orderUnits = function () {
+            var selected = _this.state.units.filter(function (u) { return u.selected == true; });
+            if (selected.length == 0)
+                return;
+            if (gl_matrix_1.vec2.length(_this.mouseDirection) == 0) {
+                _this.mouseDirection[0] = _this.mouseEnd.x - selected[0].pos[0];
+                _this.mouseDirection[1] = _this.mouseEnd.y - selected[0].pos[1];
+                gl_matrix_1.vec2.normalize(_this.mouseDirection, _this.mouseDirection);
+            }
+            var numSelected = selected.length;
+            var start = gl_matrix_1.vec2.create();
+            var end = gl_matrix_1.vec2.create();
+            end[0] = interaction.mouse.global.x;
+            end[1] = interaction.mouse.global.y;
+            var vx = gl_matrix_1.vec2.create();
+            var vy = gl_matrix_1.vec2.create();
+            gl_matrix_1.vec2.copy(vx, _this.mouseDirection);
+            gl_matrix_1.vec2.normalize(vx, vx);
+            gl_matrix_1.vec2.copy(vy, vx);
+            gl_matrix_1.vec2.set(vx, -vx[1], vx[0]);
+            var space = 24;
+            var y = 1;
+            var maxWidth = 8;
+            for (var i = 0; i < selected.length; i++) {
+                var width = Math.min(selected.length, maxWidth);
+                var pos = gl_matrix_1.vec2.create();
+                gl_matrix_1.vec2.copy(pos, vx);
+                var offset = (i % width) - (width / 2);
+                gl_matrix_1.vec2.multiply(pos, pos, [space * offset, space * offset]);
+                gl_matrix_1.vec2.add(pos, pos, end);
+                gl_matrix_1.vec2.add(pos, pos, vy);
+                gl_matrix_1.vec2.add(pos, pos, [-vy[0] * y, -vy[1] * y]);
+                var u = selected[i];
+                var order = new model_1.MoveOrder(_this.attackMove);
+                order.pos = pos;
+                u.order = order;
+                y = Math.floor(i / maxWidth) * space;
+            }
+        };
         this.canvas.addEventListener('mousedown', function (e) {
             if (!_this.isPlanningPhase())
                 return;
@@ -23859,53 +23901,21 @@ var App = /** @class */ (function (_super) {
                 }
             }
             else {
-                var i = 0;
-                var start = gl_matrix_1.vec2.create();
-                var end = gl_matrix_1.vec2.create();
-                end[0] = interaction.mouse.global.x;
-                end[1] = interaction.mouse.global.y;
-                var v = gl_matrix_1.vec2.create();
-                for (var _i = 0, _a = _this.state.units; _i < _a.length; _i++) {
-                    var u = _a[_i];
-                    if (u.selected) {
-                        gl_matrix_1.vec2.add(start, start, u.pos);
-                        i++;
-                    }
-                }
-                if (i > 0) {
-                    gl_matrix_1.vec2.divide(start, start, [i, i]);
-                    gl_matrix_1.vec2.subtract(v, end, start);
-                }
-                var moveRadius = 64;
-                var numSelected = _this.state.units.filter(function (u) { return u.selected == true; }).length;
-                var row = 0;
-                var col = 0;
-                if (numSelected > 0) {
-                    var s = Math.sqrt(numSelected);
-                    console.log(s);
-                    for (var _b = 0, _c = _this.state.units; _b < _c.length; _b++) {
-                        var u = _c[_b];
-                        if (u.selected) {
-                            var order = new model_1.MoveOrder(_this.attackMove);
-                            order.pos[0] = end[0] + col;
-                            order.pos[1] = end[1] + row;
-                            u.order = order;
-                            var space = 32;
-                            col += space;
-                            if (col >= s * space) {
-                                col = 0;
-                                row += space;
-                            }
-                        }
-                    }
-                }
+                _this.mouseEnd = interaction.mouse.global.clone();
+                gl_matrix_1.vec2.set(_this.mouseDirection, 0, 0);
+                _this.mouseRightDown = true;
             }
         });
-        document.addEventListener('mousemove', function () {
+        document.addEventListener('mousemove', function (e) {
             if (!_this.isPlanningPhase())
                 return;
             if (_this.mouseStart != null) {
                 _this.mouseEnd = interaction.mouse.global.clone();
+            }
+            if (_this.mouseRightDown && _this.mouseEnd != null) {
+                var current = interaction.mouse.global.clone();
+                _this.mouseDirection[0] = current.x - _this.mouseEnd.x;
+                _this.mouseDirection[1] = current.y - _this.mouseEnd.y;
             }
         });
         document.addEventListener('keypress', function (e) {
@@ -23934,6 +23944,12 @@ var App = /** @class */ (function (_super) {
             }
         });
         document.addEventListener('mouseup', function (e) {
+            if (e.button != 0) {
+                if (_this.mouseRightDown && _this.mouseEnd != null) {
+                    orderUnits();
+                    _this.mouseRightDown = false;
+                }
+            }
             if (!_this.isPlanningPhase())
                 return;
             if (e.button == 0) {
@@ -23950,10 +23966,10 @@ var App = /** @class */ (function (_super) {
                     v[0] = _this.mouseStart.x;
                     v[1] = _this.mouseStart.y;
                     _this.state.grid.getUnitsWithinRect(x, y, w, h).forEach(function (u) { return u.selected = true; });
-                    _this.mouseEnd = null;
                     _this.mouseStart = null;
                 }
             }
+            _this.mouseEnd = null;
         });
         var conquer = function () {
             for (var _i = 0, _a = _this.state.units; _i < _a.length; _i++) {
@@ -24031,31 +24047,38 @@ var App = /** @class */ (function (_super) {
                 _this.graphics.drawRect(margin, margin, w, 8);
             }
             if (_this.isPlanningPhase()) {
-                for (var _b = 0, _c = _this.state.units; _b < _c.length; _b++) {
-                    var u = _c[_b];
-                    if (u.selected) {
-                        _this.graphics.lineStyle(1, 0xFF0000, 0.5);
-                        _this.graphics.drawCircle(u.pos[0], u.pos[1], u.attackRadius);
-                        _this.graphics.lineStyle(1, 0xFFFFFF, 0.5);
-                        _this.graphics.drawCircle(u.pos[0], u.pos[1], u.scoutRadius);
-                    }
+                /*    for (let u of this.state.units)
+                    {
+                        if (u.selected)
+                        {
+                            this.graphics.lineStyle(1, 0xFF0000, 0.5);
+                            this.graphics.drawCircle(u.pos[0], u.pos[1], u.attackRadius);
+                            this.graphics.lineStyle(1, 0xFFFFFF, 0.5);
+                            this.graphics.drawCircle(u.pos[0], u.pos[1], u.scoutRadius);
+                        }
+                    }*/
+                if (_this.mouseStart == null && _this.mouseEnd != null) {
+                    _this.graphics.lineStyle(1, 0xFFFFFF, 0.5);
+                    _this.graphics.drawCircle(_this.mouseEnd.x, _this.mouseEnd.y, 8);
+                    _this.graphics.moveTo(_this.mouseEnd.x, _this.mouseEnd.y);
+                    _this.graphics.lineTo(_this.mouseDirection[0] + _this.mouseEnd.x, _this.mouseDirection[1] + _this.mouseEnd.y);
                 }
             }
             if (!_this.isPlanningPhase()) {
-                for (var _d = 0, _e = _this.state.effects; _d < _e.length; _d++) {
-                    var u = _e[_d];
+                for (var _b = 0, _c = _this.state.effects; _b < _c.length; _b++) {
+                    var u = _c[_b];
                     u.draw(_this.graphics);
                 }
             }
             var deadUnits = _this.state.units.filter(function (u) { return u.health <= 0; });
-            for (var _f = 0, deadUnits_1 = deadUnits; _f < deadUnits_1.length; _f++) {
-                var u = deadUnits_1[_f];
+            for (var _d = 0, deadUnits_1 = deadUnits; _d < deadUnits_1.length; _d++) {
+                var u = deadUnits_1[_d];
                 u.target = null;
                 _this.state.units.splice(_this.state.units.indexOf(u), 1);
             }
             var deadEffects = _this.state.effects.filter(function (u) { return u.life <= 0; });
-            for (var _g = 0, deadEffects_1 = deadEffects; _g < deadEffects_1.length; _g++) {
-                var u = deadEffects_1[_g];
+            for (var _e = 0, deadEffects_1 = deadEffects; _e < deadEffects_1.length; _e++) {
+                var u = deadEffects_1[_e];
                 _this.state.effects.splice(_this.state.effects.indexOf(u), 1);
             }
             if (!_this.isPlanningPhase()) {
